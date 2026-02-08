@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HataCRM | Панель керування</title>
+    <link rel="stylesheet" href="css/style.css?v=3.5">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+
+<body>
+    <div class="glass-bg"></div>
+
+    <header>
+        <div class="header-content">
+            <button class="icon-btn" id="menuToggle">⚙️</button>
+            <h1>Hata<span>CRM</span></h1>
+            <div id="currentDate" class="date-display">...</div>
+        </div>
+
+        <!-- Pop-up Menu -->
+        <div id="contextMenu" class="context-menu">
+            <div class="menu-item" id="openCalendarSettings">⚙️ Налаштування календаря</div>
+            <div class="menu-item" id="openGridSettings">📏 Розміри шахматки</div>
+            <div class="menu-item">↕️ Змінити порядок</div>
+            <div class="menu-item" id="addNewBooking">➕ Нова бронь</div>
+            <div class="menu-item">📤 Експорт в Excel</div>
+            <div class="menu-item">📩 Зв'язатися з розробником</div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Calendar Section -->
+        <section id="calendar-tab" class="tab-content active">
+            <div class="calendar-controls">
+                <button id="prevMonth">◀</button>
+                <h2 id="monthLabel">Лютий 2026</h2>
+                <button id="nextMonth">▶</button>
+            </div>
+
+            <div class="chessboard-container">
+                <div id="chessboard" class="chessboard">
+                    <!-- Calendar will be injected here -->
+                    <div class="loader">Завантаження...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Apartments Section -->
+        <section id="apartments-tab" class="tab-content">
+            <div class="tab-header tab-header-apartments">
+                <button type="button" class="header-icon-btn apartments-back-btn" id="apartmentsBackBtn" aria-label="Назад в профіль" style="display: none;">‹</button>
+                <h2>Керування квартирами</h2>
+                <button type="button" class="add-btn add-object-btn" id="addObjectBtn">+ Додати об'єкт</button>
+            </div>
+            <div id="apartmentsList" class="card-grid">
+                <!-- Apartment cards will be injected here -->
+            </div>
+        </section>
+
+        <!-- Analytics Section -->
+        <section id="analytics-tab" class="tab-content">
+            <div class="tab-header tab-header-apartments">
+                <h2>Аналітика</h2>
+                <div class="analytics-filters">
+                    <div class="analytics-year-wrap">
+                        <label for="analyticsYear" class="sr-only">Рік</label>
+                        <select id="analyticsYear" class="object-unit-select" aria-label="Рік"></select>
+                    </div>
+                    <div class="analytics-month-wrap">
+                        <label for="analyticsMonth" class="sr-only">Місяць</label>
+                        <select id="analyticsMonth" class="object-unit-select" aria-label="Місяць"></select>
+                    </div>
+                    <button type="button" id="analyticsRefreshBtn" class="analytics-refresh-btn" title="Перерахувати зведені дані (заповнити кеш)">Оновити аналітику</button>
+                </div>
+            </div>
+            <div class="analytics-content">
+                <div class="analytics-section">
+                    <h3 class="analytics-section-title">Підсумок по місяцях</h3>
+                    <div class="analytics-table-wrap">
+                        <table class="analytics-table" id="analyticsTable">
+                            <thead>
+                                <tr>
+                                    <th>Місяць</th>
+                                    <th class="num">Доходи</th>
+                                    <th class="num">Витрати</th>
+                                    <th class="num">Баланс</th>
+                                </tr>
+                            </thead>
+                            <tbody id="analyticsTableBody"></tbody>
+                            <tfoot id="analyticsTableFoot"></tfoot>
+                        </table>
+                    </div>
+                </div>
+                <div class="analytics-section">
+                    <h3 class="analytics-section-title">По об'єктах</h3>
+                    <div class="analytics-table-wrap">
+                        <table class="analytics-table analytics-table-by-apartment" id="analyticsByApartmentTable">
+                            <thead>
+                                <tr>
+                                    <th>Об'єкт</th>
+                                    <th class="num">Доходи</th>
+                                    <th class="num">Витрати</th>
+                                    <th class="num">Баланс</th>
+                                </tr>
+                            </thead>
+                            <tbody id="analyticsByApartmentBody"></tbody>
+                            <tfoot id="analyticsByApartmentFoot"></tfoot>
+                        </table>
+                    </div>
+                </div>
+                <div class="analytics-section">
+                    <h3 class="analytics-section-title">Витрати по категоріях</h3>
+                    <div class="analytics-table-wrap">
+                        <table class="analytics-table analytics-table-by-category" id="analyticsByCategoryTable">
+                            <thead>
+                                <tr>
+                                    <th>Категорія</th>
+                                    <th class="num">Сума</th>
+                                </tr>
+                            </thead>
+                            <tbody id="analyticsByCategoryBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Витрати -->
+        <section id="finance-tab" class="tab-content">
+            <div class="tab-header tab-header-apartments">
+                <h2>Витрати</h2>
+                <button type="button" class="add-btn add-object-btn" id="addExpenseBtn" aria-label="Додати витрату">+ Додати</button>
+            </div>
+                <div class="expenses-content">
+                    <div class="expenses-empty" id="expensesEmpty">
+                        <p class="expenses-empty-text">Поки немає записів про витрати.</p>
+                        <p class="expenses-empty-hint">Тут з’являтимуться комунальні, персонал, постачання тощо.</p>
+                    </div>
+                    <ul class="expenses-list" id="expensesList" style="display: none;"></ul>
+                </div>
+        </section>
+
+        <!-- Staff/Settings Section -->
+        <section id="staff-tab" class="tab-content">
+            <div class="settings-page">
+                <h2 class="settings-main-title">Налаштування</h2>
+
+                <div class="profile-card">
+                    <div class="profile-card-inner">
+                        <div class="profile-icon">👤</div>
+                        <div class="profile-info">
+                            <span class="profile-label">Профіль</span>
+                            <span class="profile-email">nikita220291@gmail.com</span>
+                        </div>
+                        <div class="premium-badge">Преміум</div>
+                        <div class="arrow-right">›</div>
+                    </div>
+                </div>
+
+                <div class="settings-list">
+                    <div class="settings-item" id="openObjectsList">
+                        <span class="s-icon">📋</span>
+                        <span class="s-text">Список об'єктів</span>
+                        <span class="s-arrow">›</span>
+                    </div>
+                    <div class="settings-item" id="openTemplates">
+                        <span class="s-icon">💬</span>
+                        <span class="s-text">Шаблони повідомлень</span>
+                        <span class="s-arrow">›</span>
+                    </div>
+                    <div class="settings-item" id="openClientsList">
+                        <span class="s-icon">👥</span>
+                        <span class="s-text">Список клієнтів</span>
+                        <span class="s-arrow">›</span>
+                    </div>
+                    <div class="settings-item">
+                        <span class="s-icon">🏷️</span>
+                        <span class="s-text">Канали продаж</span>
+                        <span class="s-arrow">›</span>
+                    </div>
+                    <div class="settings-item">
+                        <span class="s-icon">🔔</span>
+                        <span class="s-text">Сповіщення</span>
+                        <span class="s-arrow">›</span>
+                    </div>
+                    <div class="settings-item">
+                        <span class="s-icon">🌐</span>
+                        <span class="s-text">Мова</span>
+                        <span class="s-arrow">›</span>
+                    </div>
+                </div>
+
+                <h3 class="settings-category-label">Інформація</h3>
+                <div class="settings-list">
+                    <div class="settings-item">
+                        <span class="s-text">Часті питання про Преміум-доступ</span>
+                        <span class="s-arrow">›</span>
+                    </div>
+                    <div class="settings-item">
+                        <span class="s-text">Додаток довго завантажує дані?</span>
+                        <span class="s-arrow">›</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="modal">
+        <div class="modal-content booking-form-wrap">
+            <div class="booking-modal-header">
+                <button type="button" class="header-icon-btn" id="bookingModalBack" aria-label="Закрити">‹</button>
+                <h3 id="modalTitle" class="booking-modal-title">Нова бронь</h3>
+                <span class="header-icon-placeholder"></span>
+            </div>
+            <form id="bookingForm" class="booking-form-compact">
+                <input type="hidden" id="aptId">
+                <div class="form-group">
+                    <label>Об'єкт <span class="required">*</span></label>
+                    <select id="bookingObjectSelect" class="form-select" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Ім'я клієнта <span class="required">*</span></label>
+                    <input type="text" id="clientName" placeholder="Введіть ПІБ" required>
+                </div>
+                <div class="form-row form-row-half">
+                    <div class="form-group">
+                        <label>Дорослі <span class="required">*</span></label>
+                        <input type="number" id="adultsCount" value="1" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Діти</label>
+                        <input type="number" id="childrenCount" value="0" min="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Телефон <span class="required">*</span></label>
+                    <input type="tel" id="clientPhone" placeholder="+380..." required>
+                </div>
+                <div class="form-group">
+                    <label>Дод. контакт</label>
+                    <input type="text" id="secondaryContact" placeholder="Email / Telegram">
+                </div>
+                <div class="form-row form-row-half">
+                    <div class="form-group">
+                        <label>Заїзд <span class="required">*</span></label>
+                        <input type="date" id="startDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Виїзд <span class="required">*</span></label>
+                        <input type="date" id="endDate" required>
+                    </div>
+                </div>
+                <div class="form-row form-row-half">
+                    <div class="form-group">
+                        <label>Час заїзду</label>
+                        <input type="time" id="checkInTime" value="14:00">
+                    </div>
+                    <div class="form-group">
+                        <label>Час виїзду</label>
+                        <input type="time" id="checkOutTime" value="12:00">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Джерело</label>
+                    <select id="bookingSource" class="form-select">
+                        <option value="Direct">Пряме (Direct)</option>
+                        <option value="Booking">Booking.com</option>
+                        <option value="Airbnb">Airbnb</option>
+                        <option value="Telegram">Telegram</option>
+                        <option value="Viber">Viber</option>
+                    </select>
+                </div>
+                <div class="form-row form-row-half">
+                    <div class="form-group">
+                        <label>Ціна за добу</label>
+                        <input type="number" id="dailyRate" placeholder="—">
+                    </div>
+                    <div class="form-group">
+                        <label>Всього</label>
+                        <input type="number" id="totalPrice" placeholder="Авто" class="total-input">
+                    </div>
+                </div>
+                <div class="form-row form-row-half">
+                    <div class="form-group">
+                        <label>Передплата</label>
+                        <input type="number" id="prepayment" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Застава</label>
+                        <input type="number" id="deposit" placeholder="0">
+                    </div>
+                </div>
+                <div id="priceHint" class="price-hint"></div>
+                <div class="form-group">
+                    <label>Нотатки</label>
+                    <textarea id="notes" rows="2" placeholder="Замітки до броні..."></textarea>
+                </div>
+                <button type="submit" class="submit-btn">Зберегти</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Booking Details Modal -->
+    <div id="detailsModal" class="modal">
+        <div class="modal-content-details">
+            <div class="detail-header">
+                <button type="button" class="header-icon-btn" id="detailsHeaderLeft">⬅️</button>
+                <h3 id="detailsHeaderTitle">Деталі</h3>
+                <button type="button" class="header-icon-btn header-btn-text" id="detailsHeaderRight" style="opacity:0;pointer-events:none;">⋮</button>
+            </div>
+
+            <div id="detailsViewBlock" class="details-scroll-body">
+                <div class="detail-section">
+                    <div class="detail-item">
+                        <span class="label">Назва об'єкта:</span>
+                        <span id="detObjName" class="value-accent">...</span>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-item">
+                        <span class="label">Гість:</span>
+                        <span id="detGuest" class="value-accent">...</span>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-item">
+                        <span class="label">Період оренди (<span id="detNights">0</span> ночей):</span>
+                        <span id="detPeriod" class="value-accent">...</span>
+                    </div>
+                    <div class="detail-row-two">
+                        <div class="detail-item">
+                            <span class="label">Час заїзду:</span>
+                            <span id="detCheckIn" class="value-accent">—</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">Час виїзду:</span>
+                            <span id="detCheckOut" class="value-accent">—</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-item">
+                        <span class="label">Кількість гостей:</span>
+                        <span id="detGuestsCount" class="value-accent">...</span>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-item">
+                        <span class="label">Телефон:</span>
+                        <div class="phone-action-container">
+                            <span id="detPhone" class="value-accent copyable-phone" title="Натисніть, щоб скопіювати">...</span>
+                            <button type="button" id="detPhoneCopyBtn" class="copy-phone-btn" title="Копіювати номер" aria-label="Копіювати">📋</button>
+                            <div class="action-buttons-row">
+                                <a id="callLink" href="#" class="action-icon-btn" title="Дзвінок">📞</a>
+                                <a id="tgLink" href="#" class="action-icon-btn" title="Telegram">✈️</a>
+                                <a id="waLink" href="#" class="action-icon-btn" title="WhatsApp">💬</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="section-label">Шаблони повідомлень</div>
+                    <select id="templateSelector" class="template-selector">
+                        <option value="">Оберіть шаблон...</option>
+                    </select>
+                    <textarea id="messagePreview" class="message-preview" rows="4"
+                        placeholder="Тут з'явиться заповнений текст повідомлення..."></textarea>
+                    <button class="copy-message-btn" id="copyMessageBtn" style="display: none;">📋 Копіювати</button>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-row-two">
+                        <div class="detail-item">
+                            <span class="label">Ціна (доба):</span>
+                            <span id="detRate" class="value-accent">...</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">Загальна сума:</span>
+                            <span id="detTotal" class="value-accent">...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section payment-confirm-section">
+                    <div class="section-label">Підтвердження оплати</div>
+                    <div class="payment-confirm-row">
+                        <span class="label">Передплата внесена:</span>
+                        <span id="detPrepaymentStatus" class="payment-status-badge">—</span>
+                        <button type="button" id="btnConfirmPrepayment" class="payment-confirm-btn" style="display: none;">Підтвердити передплату</button>
+                    </div>
+                    <div class="payment-confirm-row">
+                        <span class="label">Основна сума сплачена:</span>
+                        <span id="detFullAmountStatus" class="payment-status-badge">—</span>
+                        <button type="button" id="btnConfirmFullAmount" class="payment-confirm-btn" style="display: none;">Підтвердити оплату</button>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <label class="section-label">Замітки</label>
+                    <div id="detNotes" class="notes-display">...</div>
+                </div>
+
+                <hr class="detail-hr">
+
+                <div class="payments-outer-section">
+                    <h4 class="outer-label">Платежі:</h4>
+
+                    <div class="payment-group">
+                        <div class="group-header">
+                            <span>Основні</span>
+                            <button class="add-text-btn">+ Додати</button>
+                        </div>
+                        <div id="mainPaymentsList" class="payment-cards-container">
+                            <!-- Cards will be injected here -->
+                        </div>
+                    </div>
+
+                    <div class="payment-group">
+                        <div class="group-header">
+                            <span>Додаткові</span>
+                            <button class="add-text-btn">+ Додати</button>
+                        </div>
+                        <div id="extraPaymentsList" class="payment-cards-container"></div>
+                    </div>
+
+                    <div class="payment-group">
+                        <div class="group-header">
+                            <span>Прибирання</span>
+                            <button class="add-text-btn">+ Додати</button>
+                        </div>
+                        <div id="cleaningPaymentsList" class="payment-cards-container"></div>
+                    </div>
+                </div>
+
+                <div class="detail-footer-info">
+                    Бронь створена: <span id="detCreatedDate">...</span>
+                </div>
+
+                <div class="detail-actions-bottom">
+                    <button type="button" class="edit-btn-refined" id="btnDetailsEdit">Редагувати</button>
+                    <button type="button" class="del-btn-refined" id="btnDetailsDelete">Видалити бронь</button>
+                </div>
+            </div>
+
+            <div id="detailsEditBlock" class="details-scroll-body details-edit-form" style="display: none;">
+                <input type="hidden" id="editBookingId">
+                <div class="detail-section">
+                    <div class="form-group">
+                        <label>Об'єкт</label>
+                        <select id="editApartmentId" class="detail-edit-input">
+                            <!-- filled by JS from apartments list -->
+                        </select>
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <div class="form-group">
+                        <label>Ім'я клієнта</label>
+                        <input type="text" id="editClientName" class="detail-edit-input" placeholder="ПІБ">
+                    </div>
+                    <div class="form-group">
+                        <label>Телефон</label>
+                        <input type="tel" id="editClientPhone" class="detail-edit-input" placeholder="+380...">
+                    </div>
+                    <div class="form-group">
+                        <label>Дод. контакт</label>
+                        <input type="text" id="editSecondaryContact" class="detail-edit-input" placeholder="Email/Telegram">
+                    </div>
+                </div>
+                <div class="detail-section form-row">
+                    <div class="form-group">
+                        <label>Заїзд</label>
+                        <input type="date" id="editStartDate" class="detail-edit-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Виїзд</label>
+                        <input type="date" id="editEndDate" class="detail-edit-input">
+                    </div>
+                </div>
+                <div class="detail-section form-row">
+                    <div class="form-group">
+                        <label>Час заїзду</label>
+                        <input type="time" id="editCheckIn" class="detail-edit-input" value="14:00">
+                    </div>
+                    <div class="form-group">
+                        <label>Час виїзду</label>
+                        <input type="time" id="editCheckOut" class="detail-edit-input" value="12:00">
+                    </div>
+                </div>
+                <div class="detail-section form-row">
+                    <div class="form-group">
+                        <label>Дорослі</label>
+                        <input type="number" id="editAdults" class="detail-edit-input" value="1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Діти</label>
+                        <input type="number" id="editChildren" class="detail-edit-input" value="0" min="0">
+                    </div>
+                </div>
+                <div class="detail-section form-row">
+                    <div class="form-group">
+                        <label>Ціна (доба)</label>
+                        <input type="number" id="editDailyRate" class="detail-edit-input" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Всього</label>
+                        <input type="number" id="editTotalPrice" class="detail-edit-input" value="0">
+                    </div>
+                </div>
+                <div class="detail-section form-row">
+                    <div class="form-group">
+                        <label>Передплата</label>
+                        <input type="number" id="editPrepayment" class="detail-edit-input" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Застава</label>
+                        <input type="number" id="editDeposit" class="detail-edit-input" value="0">
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <div class="form-group">
+                        <label>Джерело</label>
+                        <select id="editBookingSource" class="detail-edit-input">
+                            <option value="Direct">Пряме</option>
+                            <option value="Booking">Booking.com</option>
+                            <option value="Airbnb">Airbnb</option>
+                            <option value="Telegram">Telegram</option>
+                            <option value="Viber">Viber</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <div class="form-group">
+                        <label>Замітки</label>
+                        <textarea id="editNotes" class="detail-edit-input" rows="3" placeholder="Нотатки..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Карта об'єкта (редагування квартири) -->
+    <div id="objectCardModal" class="modal">
+        <div class="modal-content object-card-wrap">
+            <div class="object-card-header">
+                <button type="button" class="header-icon-btn" id="objectCardBack">‹</button>
+                <h3 id="objectCardTitle" class="object-card-title">Об'єкт</h3>
+                <span class="header-icon-placeholder"></span>
+            </div>
+            <form id="objectCardForm" class="object-card-form">
+                <input type="hidden" id="objectCardId">
+                <div class="form-group">
+                    <label>Назва об'єкта <span class="required">*</span></label>
+                    <input type="text" id="objectCardName" required placeholder="Назва">
+                </div>
+                <div class="form-group">
+                    <label>Колір</label>
+                    <div class="object-color-palette" id="objectColorPalette" role="group" aria-label="Вибір кольору">
+                        <button type="button" class="object-color-swatch-btn" data-color="#22c55e" style="background:#22c55e" title="Зелений"></button>
+                        <button type="button" class="object-color-swatch-btn" data-color="#3b82f6" style="background:#3b82f6" title="Синій"></button>
+                        <button type="button" class="object-color-swatch-btn" data-color="#eab308" style="background:#eab308" title="Жовтий"></button>
+                        <button type="button" class="object-color-swatch-btn" data-color="#f97316" style="background:#f97316" title="Помаранчевий"></button>
+                        <button type="button" class="object-color-swatch-btn" data-color="#ec4899" style="background:#ec4899" title="Рожевий"></button>
+                        <button type="button" class="object-color-swatch-btn" data-color="#8b5cf6" style="background:#8b5cf6" title="Фіолетовий"></button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Адреса</label>
+                    <input type="text" id="objectCardAddress" placeholder="Адреса">
+                </div>
+                <div class="form-group">
+                    <label>Опис (посилання на локацію, правила дому тощо)</label>
+                    <textarea id="objectCardDescription" rows="3" placeholder="Опис..."></textarea>
+                </div>
+                <div class="form-group">
+                    <span class="label-inline">Ви власник?</span>
+                    <div class="object-card-toggle">
+                        <button type="button" class="toggle-btn active" data-role="owner">Власник</button>
+                        <button type="button" class="toggle-btn" data-role="manager">Менеджер</button>
+                    </div>
+                </div>
+                <div class="object-card-section-label">Значення за замовчуванням:</div>
+                <div class="form-group object-card-price-row">
+                    <label>Ціна за замовчуванням</label>
+                    <div class="object-price-input-row">
+                        <input type="number" id="objectCardBasePrice" placeholder="0" min="0" step="0.01" class="object-price-input">
+                        <select id="objectCardPriceUnit" class="object-unit-select" aria-label="Одиниця">
+                            <option value="day">Сутки</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group object-card-prepay-row">
+                    <label class="object-checkbox-label">
+                        <input type="checkbox" id="objectCardDefaultPrepay" class="object-checkbox">
+                        <span>Передплата за замовчуванням</span>
+                    </label>
+                </div>
+                <button type="submit" class="object-card-save-btn">Зберегти</button>
+                <button type="button" class="object-card-delete-btn" id="objectCardDeleteBtn" style="display: none;">Видалити об'єкт</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Нова витрата (плашка) -->
+    <div id="expenseModal" class="modal">
+        <div class="modal-content object-card-wrap" style="max-width: 420px;">
+            <div class="object-card-header">
+                <button type="button" class="header-icon-btn" id="expenseModalBack" aria-label="Закрити">‹</button>
+                <h3 class="object-card-title" id="expenseModalTitle">Нова витрата</h3>
+            </div>
+            <form id="expenseForm" class="object-card-form">
+                <input type="hidden" id="expenseId" value="">
+                <div class="form-group">
+                    <label>Категорія витрат *</label>
+                    <select id="expenseCategory" required class="object-price-input" style="width:100%;padding:0.7rem;">
+                        <option value="">Оберіть категорію</option>
+                        <option value="Ремонт">Ремонт</option>
+                        <option value="Оренда">Оренда</option>
+                        <option value="Налог">Налог</option>
+                        <option value="ЗП">ЗП</option>
+                        <option value="Реклама — Гугл">Реклама — Гугл</option>
+                        <option value="Реклама — ОЛХ">Реклама — ОЛХ</option>
+                        <option value="Різне">Різне</option>
+                        <option value="ЗП адмін">ЗП адмін</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Опис</label>
+                    <textarea id="expenseDescription" rows="2" placeholder="Опис витрати" class="object-price-input" style="width:100%;min-height:60px;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Об'єкт</label>
+                    <select id="expenseApartment" class="object-price-input" style="width:100%;padding:0.7rem;">
+                        <option value="">— Без прив'язки —</option>
+                        <!-- options from JS -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Сума (UAH) *</label>
+                    <input type="number" id="expenseAmount" required min="0" step="1" placeholder="0" class="object-price-input">
+                </div>
+                <div class="form-group">
+                    <label>Дата</label>
+                    <input type="date" id="expenseDate" class="object-price-input">
+                </div>
+                <button type="submit" class="object-card-save-btn" id="expenseSubmitBtn">Додати</button>
+                <button type="button" class="object-card-delete-btn" id="expenseDeleteBtn" style="display: none;">Видалити</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Clients List Modal -->
+    <div id="clientsModal" class="modal">
+        <div class="modal-content-details">
+            <div class="detail-header">
+                <button class="header-icon-btn" onclick="document.getElementById('clientsModal').style.display='none'">
+                    ⬅️
+                </button>
+                <h3>Клієнти</h3>
+                <button class="header-icon-btn">
+                    +
+                </button>
+            </div>
+
+            <div class="details-scroll-body">
+                <div class="search-bar-container">
+                    <input type="text" id="clientSearch" placeholder="🔍 Пошук за іменем або телефоном..."
+                        class="search-input">
+                </div>
+
+                <div id="clientsList" class="clients-list">
+                    <!-- Client cards will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Templates Modal -->
+    <div id="templatesModal" class="modal">
+        <div class="modal-content-details">
+            <div class="detail-header">
+                <button class="header-icon-btn"
+                    onclick="document.getElementById('templatesModal').style.display='none'">
+                    ⬅️
+                </button>
+                <h3>Шаблони повідомлень</h3>
+                <button class="header-icon-btn" id="addTemplateBtn">
+                    +
+                </button>
+            </div>
+
+            <div class="details-scroll-body">
+                <div id="templatesList" class="templates-list">
+                    <!-- Template cards will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template Creation Form Modal -->
+    <div id="templateFormModal" class="modal" style="display: none;">
+        <div class="modal-content-details">
+            <div class="detail-header">
+                <button class="header-icon-btn"
+                    onclick="document.getElementById('templateFormModal').style.display='none'">
+                    ⬅️
+                </button>
+                <h3>Створити шаблон</h3>
+                <button class="header-icon-btn" style="opacity: 0; pointer-events: none;">
+                    ·
+                </button>
+            </div>
+
+            <div class="details-scroll-body">
+                <div class="form-group">
+                    <label>Назва шаблона</label>
+                    <input type="text" id="templateTitleInput" placeholder="Наприклад: Підтвердження броні">
+                </div>
+
+                <div class="form-group">
+                    <label>Текст повідомлення</label>
+                    <textarea id="templateContentInput" rows="6" placeholder="Введіть текст повідомлення..."></textarea>
+                </div>
+
+                <div class="placeholder-buttons">
+                    <button class="placeholder-btn" data-placeholder="*Имя клиента*">*Имя клиента*</button>
+                    <button class="placeholder-btn" data-placeholder="*Название объекта*">*Назва об'єкта*</button>
+                    <button class="placeholder-btn" data-placeholder="*Адрес*">*Адрес*</button>
+                    <button class="placeholder-btn" data-placeholder="*Описание объекта*">*Описание объекта*</button>
+                    <button class="placeholder-btn" data-placeholder="*Начальная дата*">*Начальная дата*</button>
+                    <button class="placeholder-btn" data-placeholder="*Конечная дата*">*Конечная дата*</button>
+                    <button class="placeholder-btn" data-placeholder="*Конечное время*">*Конечное время*</button>
+                    <button class="placeholder-btn" data-placeholder="*Сумма предоплаты*">*Сумма предоплаты*</button>
+                    <button class="placeholder-btn" data-placeholder="*Сумма следующей оплаты*">*Сумма следующей
+                        оплаты*</button>
+                </div>
+
+                <button class="submit-btn" id="saveTemplateBtn">Зберегти</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar Grid Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="close" id="closeSettings">&times;</span>
+            <h3 style="margin-bottom: 2rem;">Розміри календаря</h3>
+
+            <div class="settings-group" style="margin-bottom: 2rem;">
+                <div class="settings-label" style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                    <span>Висота строки (px):</span>
+                    <span id="rowHeightVal" class="val-badge"
+                        style="background: var(--primary); padding: 2px 8px; border-radius: 6px; font-weight: 600;">50</span>
+                </div>
+                <input type="range" id="rowHeightSlider" min="30" max="80" value="50"
+                    style="width: 100%; accent-color: var(--primary);">
+            </div>
+
+            <div class="settings-group" style="margin-bottom: 2rem;">
+                <div class="settings-label" style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                    <span>Ширина колонки (px):</span>
+                    <span id="colWidthVal" class="val-badge"
+                        style="background: var(--primary); padding: 2px 8px; border-radius: 6px; font-weight: 600;">40</span>
+                </div>
+                <input type="range" id="colWidthSlider" min="30" max="80" value="40"
+                    style="width: 100%; accent-color: var(--primary);">
+            </div>
+
+            <div class="settings-group" style="margin-bottom: 2.5rem;">
+                <div class="settings-label" style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                    <span>Ширина назви (px):</span>
+                    <span id="firstColWidthVal" class="val-badge"
+                        style="background: var(--primary); padding: 2px 8px; border-radius: 6px; font-weight: 600;">130</span>
+                </div>
+                <input type="range" id="firstColWidthSlider" min="80" max="250" value="130"
+                    style="width: 100%; accent-color: var(--primary);">
+            </div>
+
+            <button class="submit-btn" id="saveSettings" style="margin-top: 0;">Закрити</button>
+        </div>
+    </div>
+
+    <footer class="bottom-nav">
+        <button class="nav-item active" data-tab="calendar">
+            <span class="nav-icon">🗓</span>
+            <span class="nav-label">Календар</span>
+        </button>
+        <button class="nav-item" data-tab="analytics">
+            <span class="nav-icon">📊</span>
+            <span class="nav-label">Аналітика</span>
+        </button>
+        <button class="nav-item" data-tab="finance">
+            <span class="nav-icon">📤</span>
+            <span class="nav-label">Витрати</span>
+        </button>
+        <button class="nav-item" data-tab="staff">
+            <span class="nav-icon">👤</span>
+            <span class="nav-label">Профіль</span>
+        </button>
+    </footer>
+
+    <div id="toast" class="toast" aria-live="polite">Скопійовано в буфер обміну</div>
+
+    <script src="js/app.js?v=3.5" type="module"></script>
+</body>
+
+</html>

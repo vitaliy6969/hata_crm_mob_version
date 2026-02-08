@@ -1,0 +1,1464 @@
+:root {
+    --primary: #0d9488;
+    --primary-glow: rgba(13, 148, 136, 0.4);
+    --bg-dark: #0f172a;
+    --bg-page: #020617;
+    --glass-bg: rgba(30, 41, 59, 0.5);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --text-white: #f8fafc;
+    --text-muted: #94a3b8;
+    --accent: #f43f5e;
+
+    --cell-height: 55px;
+    --cell-width: 50px;
+    --first-col-width: 130px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-family: 'Outfit', sans-serif;
+    background-color: var(--bg-page);
+    color: var(--text-white);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+body.no-scroll {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+}
+
+.glass-bg {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+}
+
+/* Header Styling - Reverted to Dark */
+header {
+    padding: 0.8rem 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.context-menu {
+    display: none;
+    position: absolute;
+    top: 3.2rem;
+    left: 1rem;
+    background: rgba(15, 23, 42, 0.98);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 0.35rem;
+    width: 200px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    z-index: 3000;
+}
+
+.menu-item {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.menu-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header h1 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+header h1 span {
+    color: var(--primary);
+}
+
+.date-display {
+    text-align: right;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.icon-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    color: var(--text-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Bottom Nav - Premium Dark */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid var(--glass-border);
+    display: flex;
+    padding: 0.6rem 0.5rem 2rem;
+    z-index: 2000;
+}
+
+.nav-item {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+.nav-item.active {
+    color: var(--primary);
+}
+
+.nav-icon {
+    font-size: 1.3rem;
+}
+
+.nav-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+}
+
+/* Grid Styling */
+/* Tab Content Visibility */
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+main {
+    padding: 0.5rem;
+    padding-bottom: 6rem;
+}
+
+.calendar-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+#monthLabel {
+    font-weight: 700;
+    font-size: 0.95rem;
+    min-width: 140px;
+    text-align: center;
+}
+
+.chessboard-container {
+    border-radius: 16px;
+    overflow-x: auto;
+}
+
+/* Вкладка об'єктів: кнопка «Додати об'єкт» — велика і помітна */
+.tab-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+.tab-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-white);
+}
+.tab-header-apartments {
+    position: relative;
+}
+.tab-header-apartments .apartments-back-btn {
+    flex-shrink: 0;
+    margin-right: 0.25rem;
+}
+.tab-header-apartments h2 {
+    flex: 1;
+    min-width: 0;
+}
+.add-object-btn {
+    padding: 0.75rem 1.25rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 12px;
+    border: none;
+    background: var(--primary);
+    color: white;
+    cursor: pointer;
+    min-height: 48px;
+    box-shadow: 0 4px 14px var(--primary-glow);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.add-object-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px var(--primary-glow);
+}
+.add-object-btn:active {
+    transform: translateY(0);
+}
+
+/* Apartments Cards */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.apt-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 1.2rem;
+}
+
+.apt-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.apt-card p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.card-actions {
+    display: flex;
+    gap: 0.8rem;
+    margin-top: 1.2rem;
+}
+
+.edit-btn,
+.del-btn {
+    flex: 1;
+    padding: 0.6rem;
+    border-radius: 8px;
+    border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.del-btn {
+    color: #f43f5e;
+}
+
+.calendar-row {
+    display: grid;
+    border-bottom: 1px solid var(--glass-border);
+    min-width: max-content;
+}
+
+.cell {
+    min-height: var(--cell-height);
+    width: var(--cell-width);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    border-right: 1px solid var(--glass-border);
+    position: relative;
+}
+
+.cell.header-cell {
+    background: rgba(15, 23, 42, 0.4);
+    font-weight: 600;
+}
+
+.cell.sticky {
+    position: sticky;
+    left: 0;
+    z-index: 30;
+    background: var(--bg-dark);
+    width: var(--first-col-width) !important;
+    justify-content: flex-start;
+    padding-left: 0.8rem;
+    border-right: 2px solid var(--glass-border);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cell.weekend {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* Виділений день — просто світліший стовпчик, без полосок/обводки */
+.cell.day-today {
+    background: rgba(13, 148, 136, 0.18);
+}
+.cell.header-cell.day-today {
+    background: rgba(13, 148, 136, 0.28);
+    font-weight: 700;
+}
+
+/* Смуга дня — просто трохи світліший колір, без градієнтів */
+.pill {
+    position: absolute;
+    height: 72%;
+    min-height: 28px;
+    width: calc(100% - 4px);
+    left: 2px;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0 6px 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: rgba(30, 41, 59, 0.9);
+    z-index: 10;
+    border: none;
+    box-shadow: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pill.pill-unpaid {
+    box-shadow: 0 0 0 1px rgba(234, 88, 12, 0.5);
+}
+
+/* Нова бронь — без прозорості, суцільний колір */
+.pill-pink {
+    background: #e8798f;
+}
+
+.pill-yellow {
+    background: #e5c231;
+}
+
+.pill-blue {
+    background: #7ba3f7;
+}
+
+.pill-green {
+    background: #5cc97a;
+}
+
+.pill-orange {
+    background: #f59e5c;
+}
+
+.pill-cyan {
+    background: #5dd4e8;
+}
+
+.pill.start {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    width: 100%;
+    left: 2px;
+}
+
+.pill.middle {
+    border-radius: 0;
+    width: calc(100% + 1px);
+    left: 0;
+}
+
+.pill.end {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    width: calc(100% - 2px);
+    left: 0;
+}
+
+/* Крапка статусу: зелена — оплачено, помаранчева — не оплачено */
+.status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: #22c55e;
+}
+.status-dot.dot-unpaid {
+    background: #ea580c;
+}
+.status-dot.dot-warn {
+    background: #eab308;
+}
+.status-dot.dot-pending {
+    background: #94a3b8;
+}
+
+/* Modals Refined */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(2, 6, 23, 0.85);
+    backdrop-filter: blur(20px);
+    z-index: 5000;
+}
+
+/* REDESIGNED DETAILS MODAL */
+.modal-content-details {
+    width: 100%;
+    height: 100vh;
+    background: #020617;
+    /* Solid dark for full-screen feel */
+    display: flex;
+    flex-direction: column;
+    color: var(--text-white);
+}
+
+.detail-header {
+    padding: 1.2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.detail-header h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.header-icon-btn {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    color: var(--text-white);
+    cursor: pointer;
+    padding: 0.5rem 0.75rem;
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.details-scroll-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    padding-bottom: 8rem;
+}
+
+.detail-section {
+    margin-bottom: 1.2rem;
+}
+
+.details-edit-form .form-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+.details-edit-form .form-row .form-group {
+    flex: 1;
+    min-width: 120px;
+}
+.detail-edit-input {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border-radius: 10px;
+    border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-white);
+    font-size: 0.95rem;
+}
+.detail-edit-input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+.header-btn-text {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-bottom: 0.8rem;
+}
+.detail-row-two {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 0.8rem;
+}
+.detail-row-two .detail-item {
+    margin-bottom: 0;
+}
+
+.detail-item .label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.value-accent {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #60a5fa;
+}
+.copyable-phone {
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    user-select: none;
+    -webkit-user-select: none;
+}
+.copyable-phone:hover {
+    opacity: 0.9;
+}
+.copy-phone-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    margin-left: 8px;
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    vertical-align: middle;
+    transition: background 0.2s, color 0.2s;
+}
+.copy-phone-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--primary);
+}
+.copy-phone-btn:active {
+    transform: scale(0.95);
+}
+
+.payment-confirm-section {
+    margin-bottom: 1.2rem;
+}
+.payment-confirm-section .section-label {
+    margin-bottom: 0.75rem;
+}
+.payment-confirm-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.6rem;
+    flex-wrap: wrap;
+}
+.payment-confirm-row .label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    min-width: 140px;
+}
+.payment-status-badge {
+    font-size: 0.85rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+}
+.payment-status-badge.paid {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+}
+.payment-status-badge.unpaid {
+    background: rgba(244, 63, 94, 0.15);
+    color: var(--accent);
+}
+.payment-confirm-btn {
+    padding: 0.65rem 1.25rem;
+    font-size: 0.95rem;
+    border-radius: 10px;
+    border: 1px solid var(--primary);
+    background: rgba(13, 148, 136, 0.15);
+    color: var(--primary);
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+    min-height: 44px;
+}
+.payment-confirm-btn:hover {
+    background: rgba(13, 148, 136, 0.25);
+}
+
+.phone-action-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.action-buttons-row {
+    display: flex;
+    gap: 0.6rem;
+}
+
+.action-icon-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid #60a5fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-size: 1.2rem;
+    color: #60a5fa;
+    transition: all 0.2s;
+}
+
+.action-icon-btn:hover {
+    background: rgba(96, 165, 250, 0.1);
+}
+
+.outline-btn-full {
+    width: 100%;
+    padding: 0.9rem;
+    background: transparent;
+    border: 1px solid #60a5fa;
+    border-radius: 12px;
+    color: #60a5fa;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.section-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.notes-display {
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    font-size: 0.9rem;
+    min-height: 60px;
+    border: 1px solid var(--glass-border);
+}
+
+.detail-hr {
+    border: none;
+    border-top: 1px solid var(--glass-border);
+    margin: 1.5rem 0;
+}
+
+/* Payments Refined */
+.payments-outer-section {
+    margin-top: 1.5rem;
+}
+
+.outer-label {
+    font-size: 1.1rem;
+    margin-bottom: 1.2rem;
+    color: var(--text-white);
+}
+
+.payment-group {
+    margin-bottom: 1.5rem;
+}
+
+.group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.8rem;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.add-text-btn {
+    background: transparent;
+    border: 1px solid #60a5fa;
+    color: #60a5fa;
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    font-weight: 600;
+    min-height: 40px;
+}
+
+.payment-cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+/* Картка платежу — суцільний світло-синій фон, без прозорості (як на зразку) */
+.payment-card-refined {
+    background: #dbeafe;
+    border: 1px solid #93c5fd;
+    border-radius: 16px;
+    padding: 1rem;
+}
+.payment-card-refined .p-card-label {
+    color: #475569;
+}
+.payment-card-refined .p-card-val {
+    color: #0f172a;
+}
+.payment-card-refined .p-card-total {
+    color: #0f172a;
+}
+
+.p-card-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.p-card-label {
+    color: var(--text-muted);
+}
+
+.p-card-val {
+    color: var(--text-white);
+    font-weight: 500;
+}
+
+.p-card-total {
+    margin-top: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 700;
+}
+
+.detail-footer-info {
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin: 2rem 0;
+}
+
+.detail-actions-bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.edit-btn-refined,
+.del-btn-refined {
+    padding: 1.1rem 1.25rem;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+    font-weight: 700;
+    font-size: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+    min-height: 48px;
+}
+
+.del-btn-refined {
+    color: var(--accent);
+    border-color: rgba(244, 63, 94, 0.2);
+}
+
+/* Карта об'єкта — один скрол, без «вікна в вікні» */
+#objectCardModal .modal-content {
+    height: 100vh;
+    max-height: 100dvh;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.object-card-wrap {
+    background: #0f172a;
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.object-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid var(--glass-border);
+}
+.object-card-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 0;
+    flex: 1;
+    text-align: center;
+    color: var(--text-white);
+}
+.object-card-form {
+    padding: 1rem 1.5rem 4rem;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+.object-card-form input,
+.object-card-form textarea {
+    overflow-x: hidden;
+}
+.object-card-form .form-group {
+    margin-bottom: 1rem;
+}
+.object-card-form .form-group label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 0.35rem;
+}
+.object-card-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+.object-card-row .form-group.flex-1 { flex: 1; }
+/* Проста палітра кольорів — клік по квадратику */
+.object-color-palette {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.35rem;
+}
+.object-color-swatch-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 2px solid #334155;
+    padding: 0;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+.object-color-swatch-btn:hover {
+    transform: scale(1.08);
+    border-color: #64748b;
+}
+.object-color-swatch-btn.selected {
+    border-color: #f1f5f9;
+    box-shadow: 0 0 0 2px var(--primary);
+}
+/* Ряд ціни — інпут і «Сутки» в один ряд, рівно */
+.object-card-price-row { margin-bottom: 1rem; }
+.object-price-input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.35rem;
+}
+.object-price-input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.6rem 0.75rem;
+    border-radius: 10px;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: #f1f5f9;
+    font-size: 0.9rem;
+}
+/* Чекбокс і текст поруч, без великого розриву */
+.object-card-prepay-row { margin-bottom: 1rem; }
+.object-checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-top: 0.35rem;
+}
+.object-checkbox-label .object-checkbox {
+    flex-shrink: 0;
+}
+.object-card-section-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-white);
+    margin: 1rem 0 0.5rem;
+}
+.object-unit-select {
+    padding: 0.6rem 0.75rem;
+    border-radius: 10px;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: #f1f5f9;
+    font-size: 0.9rem;
+    min-width: 100px;
+    flex-shrink: 0;
+}
+.object-card-row-check {
+    margin-bottom: 1rem;
+}
+.label-inline { font-size: 0.9rem; color: var(--text-muted); }
+.object-checkbox {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--primary);
+}
+.object-card-toggle {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+.object-card-toggle .toggle-btn {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.object-card-toggle .toggle-btn.active {
+    background: rgba(13, 148, 136, 0.25);
+    border-color: var(--primary);
+    color: var(--primary);
+    font-weight: 600;
+}
+.object-card-save-btn {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    margin-top: 1rem;
+    border-radius: 12px;
+    border: none;
+    background: var(--primary);
+    color: white;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+.object-card-delete-btn {
+    width: 100%;
+    padding: 0.85rem 1.25rem;
+    margin-top: 0.75rem;
+    border-radius: 12px;
+    border: 1px solid rgba(244, 63, 94, 0.4);
+    background: transparent;
+    color: var(--accent);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.object-card-delete-btn:active {
+    background: rgba(244, 63, 94, 0.1);
+}
+
+.modal-content {
+    width: 100%;
+    min-height: 100vh;
+    padding: 2rem 1.5rem 8rem;
+    color: var(--text-white);
+    background: #0f172a;
+    overflow-y: auto;
+}
+
+.close {
+    position: fixed;
+    right: 1.5rem;
+    top: 1.5rem;
+    font-size: 1.5rem;
+    color: var(--text-muted);
+}
+
+/* Booking modal: суцільний фон, без прозорості */
+.booking-form-wrap {
+    padding-top: 0;
+    background: #0f172a;
+}
+.booking-form-wrap .booking-modal-header {
+    background: #0f172a;
+}
+.booking-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid var(--glass-border);
+    flex-shrink: 0;
+}
+.booking-modal-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 0;
+    flex: 1;
+    text-align: center;
+}
+.header-icon-placeholder {
+    width: 44px;
+    flex-shrink: 0;
+}
+.booking-form-compact {
+    padding: 1rem 1.5rem 8rem;
+}
+.booking-form-compact .form-group {
+    margin-bottom: 0.85rem;
+}
+.booking-form-compact .form-group label {
+    margin-bottom: 0.35rem;
+    font-size: 0.7rem;
+}
+.booking-form-compact .form-row-half {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+.booking-form-compact .form-row-half .form-group {
+    margin-bottom: 0;
+}
+.booking-form-compact input,
+.booking-form-compact select,
+.booking-form-compact textarea {
+    padding: 0.6rem 0.75rem;
+    font-size: 0.9rem;
+    border-radius: 10px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #f1f5f9;
+}
+.booking-form-compact .price-hint {
+    margin-bottom: 0.75rem;
+    font-size: 0.8rem;
+    text-align: center;
+}
+.booking-form-compact .required {
+    color: var(--accent);
+}
+
+.form-group label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+input,
+select,
+textarea {
+    width: 100%;
+    padding: 0.8rem;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    color: #f1f5f9;
+    font-size: 0.95rem;
+}
+
+.submit-btn {
+    width: calc(100% - 3rem);
+    position: fixed;
+    bottom: 2rem;
+    left: 1.5rem;
+    padding: 1.2rem 1.5rem;
+    background: var(--primary);
+    border-radius: 16px;
+    font-weight: 800;
+    font-size: 1.05rem;
+    color: white;
+    border: none;
+    box-shadow: 0 10px 30px var(--primary-glow);
+    min-height: 52px;
+}
+
+/* Fix mobile overflows */
+@media (max-width: 768px) {
+    .cell.sticky {
+        width: 110px !important;
+    }
+}/* SETTINGS PAGE */
+.settings-page {
+    padding: 1.5rem;
+    padding-bottom: 8rem;
+}
+
+.settings-main-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: var(--text-white);
+}
+
+.profile-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 1.2rem;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.profile-card-inner {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.profile-icon {
+    width: 44px;
+    height: 44px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+}
+
+.profile-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.profile-email {
+    font-size: 1rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+}
+
+.premium-badge {
+    background: #0ea5e9;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+}
+
+.arrow-right,
+.s-arrow {
+    font-size: 1.2rem;
+    color: var(--text-muted);
+}
+
+.settings-list {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 18px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.settings-item {
+    padding: 1rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.2s;
+    cursor: pointer;
+}
+
+.settings-item:last-child {
+    border-bottom: none;
+}
+
+.settings-item:active {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.u-p {
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.s-icon {
+    font-size: 1.2rem;
+    color: #60a5fa;
+    width: 24px;
+    text-align: center;
+}
+
+.s-text {
+    flex: 1;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.settings-category-label {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    padding-left: 0.5rem;
+}
+
+.placeholder-content {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* Фінанси → Витрати */
+.finance-main .settings-list { margin-top: 0.5rem; }
+.finance-expenses .tab-header-apartments { margin-bottom: 0.75rem; }
+.expenses-content {
+    padding: 0 0 2rem;
+}
+.expenses-empty {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+}
+.expenses-empty-text {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-white);
+    margin-bottom: 0.5rem;
+}
+.expenses-empty-hint {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+.expenses-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.expense-item {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 1rem;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.35rem 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.expense-item:active {
+    background: rgba(255, 255, 255, 0.08);
+}
+.expense-item-cat {
+    font-weight: 700;
+    color: var(--text-white);
+    font-size: 1rem;
+}
+.expense-item-amount {
+    font-weight: 700;
+    color: var(--accent);
+    text-align: right;
+}
+.expense-item-apt,
+.expense-item-date {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+.expense-item-desc {
+    grid-column: 1 / -1;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+/* Аналітика */
+.analytics-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+.analytics-year-wrap,
+.analytics-month-wrap {
+    flex-shrink: 0;
+}
+.analytics-year-wrap select,
+.analytics-month-wrap select {
+    padding: 0.5rem 0.75rem;
+    border-radius: 10px;
+    border: 1px solid var(--glass-border);
+    background: var(--bg-dark);
+    color: var(--text-white);
+    font-size: 0.95rem;
+}
+.analytics-refresh-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    border: 1px solid var(--glass-border);
+    background: var(--bg-dark);
+    color: var(--text-white);
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+.analytics-refresh-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+}
+.analytics-refresh-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.analytics-content {
+    padding: 0.5rem 0 2rem;
+}
+.analytics-section {
+    margin-bottom: 1.5rem;
+}
+.analytics-section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-white);
+    margin: 0 0 0.5rem 0;
+    padding-left: 0.25rem;
+}
+.analytics-table-wrap {
+    overflow-x: auto;
+}
+.analytics-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+.analytics-table th,
+.analytics-table td {
+    padding: 0.65rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--glass-border);
+}
+.analytics-table th.num,
+.analytics-table td.num {
+    text-align: right;
+}
+.analytics-table tfoot td {
+    border-top: 2px solid var(--glass-border);
+    padding-top: 0.85rem;
+}
+.analytics-positive { color: var(--primary); }
+.analytics-negative { color: var(--accent); }
+.analytics-total-row td { background: rgba(255, 255, 255, 0.03); }
+.analytics-error { color: var(--text-muted); text-align: center; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+/* CLIENTS MODAL */
+.search-bar-container { padding: 1rem 0; }
+.search-input { width: 100%; padding: 0.9rem 1rem; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 14px; color: white; font-size: 0.95rem; }
+.clients-list { display: flex; flex-direction: column; gap: 0.8rem; }
+.client-card { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border); border-radius: 16px; padding: 1rem; cursor: pointer; transition: background 0.2s; }
+.client-card:active { background: rgba(255, 255, 255, 0.08); }
+.client-name { font-size: 1rem; font-weight: 600; color: var(--text-white); margin-bottom: 0.3rem; }
+.client-phone { font-size: 0.85rem; color: var(--text-muted); }
+.client-bookings-count { font-size: 0.75rem; color: var(--primary); margin-top: 0.5rem; }
+
+/* TEMPLATES MODAL */
+.templates-list { display: flex; flex-direction: column; gap: 0.8rem; padding: 1rem 0; }
+.template-card { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border); border-radius: 16px; padding: 1rem; position: relative; }
+.template-title { font-size: 1rem; font-weight: 600; color: var(--text-white); margin-bottom: 0.5rem; }
+.template-content { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; max-height: 3rem; overflow: hidden; text-overflow: ellipsis; }
+.template-delete { position: absolute; top: 1rem; right: 1rem; background: rgba(244, 63, 94, 0.1); color: var(--accent); border: 1px solid rgba(244, 63, 94, 0.2); padding: 0.3rem 0.6rem; border-radius: 8px; font-size: 0.75rem; cursor: pointer; }
+
+/* TEMPLATE FORM */
+.placeholder-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0; }
+.placeholder-btn { background: rgba(96, 165, 250, 0.1); color: var(--primary); border: 1px solid rgba(96, 165, 250, 0.3); padding: 0.5rem 0.8rem; border-radius: 10px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
+.placeholder-btn:active { background: rgba(96, 165, 250, 0.2); transform: scale(0.95); }
+
+/* TEMPLATE SELECTOR IN BOOKING DETAILS */
+.template-selector { width: 100%; padding: 0.8rem; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 12px; color: white; font-size: 0.95rem; margin-bottom: 0.8rem; }
+.message-preview { width: 100%; padding: 0.8rem; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 12px; color: white; font-size: 0.9rem; line-height: 1.5; resize: vertical; }
+.copy-message-btn { width: 100%; padding: 1rem 1.2rem; background: rgba(96, 165, 250, 0.1); color: var(--primary); border: 1px solid rgba(96, 165, 250, 0.3); border-radius: 12px; font-weight: 600; font-size: 1rem; margin-top: 0.8rem; cursor: pointer; min-height: 48px; }
+.copy-message-btn:active { background: rgba(96, 165, 250, 0.2); }
+
+/* Fix booking click */
+.pill { cursor: pointer; pointer-events: auto; }
+
+/* Enhance Placeholder Buttons Grid */
+.placeholder-buttons { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-top: 10px; }
+
+/* Toast - маленьке окошечко внизу */
+.toast {
+    position: fixed;
+    bottom: 5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    padding: 0.6rem 1.2rem;
+    background: rgba(30, 41, 59, 0.95);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    color: var(--text-white);
+    font-size: 0.9rem;
+    white-space: nowrap;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transition: transform 0.25s ease, opacity 0.25s ease, visibility 0.25s;
+}
+.toast.toast-visible {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    visibility: visible;
+}

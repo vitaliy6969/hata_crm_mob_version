@@ -1,0 +1,8 @@
+# Локальні дані доступу — не комітити
+server-access.local.txt
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
