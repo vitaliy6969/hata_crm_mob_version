@@ -73,8 +73,12 @@ async function computeMonthly(year) {
     const yearStart = `${year}-01-01`;
     const yearEnd = `${year + 1}-01-01`;
     const bookingsRes = await db.query(
-        `SELECT start_date, end_date, total_price, prepayment, prepayment_paid, full_amount_paid FROM bookings
-         WHERE status != 'CANCELLED' AND (prepayment_paid = true OR full_amount_paid = true) AND start_date < $2 AND end_date > $1`,
+        `SELECT start_date, end_date, total_price, prepayment, prepayment_paid, full_amount_paid,
+         (SELECT COALESCE(SUM(amount), 0) FROM booking_payments WHERE booking_id = b.id AND paid = true) AS paid_from_payments,
+         (SELECT COUNT(*) FROM booking_payments WHERE booking_id = b.id AND paid = true) AS payment_count
+         FROM bookings b
+         WHERE status != 'CANCELLED' AND start_date < $2 AND end_date > $1
+         AND ((prepayment_paid = true OR full_amount_paid = true) OR EXISTS (SELECT 1 FROM booking_payments WHERE booking_id = b.id AND paid = true))`,
         [yearStart, yearEnd]
     );
     const months = [];
@@ -85,7 +89,9 @@ async function computeMonthly(year) {
         for (const b of bookingsRes.rows) {
             const prep = parseFloat(b.prepayment) || 0;
             const totalPrice = parseFloat(b.total_price) || 0;
-            const paidAmount = (b.prepayment_paid ? prep : 0) + (b.full_amount_paid ? (totalPrice - prep) : 0);
+            const paidAmount = (b.payment_count > 0)
+                ? (parseFloat(b.paid_from_payments) || 0)
+                : ((b.prepayment_paid ? prep : 0) + (b.full_amount_paid ? (totalPrice - prep) : 0));
             if (paidAmount <= 0) continue;
             const start = toDateStr(b.start_date);
             const end = toDateStr(b.end_date);
@@ -116,15 +122,21 @@ async function computeByApartment(year, month) {
     let totalExpenses = 0;
     for (const apt of apartments.rows) {
         const bookingsRes = await db.query(
-            `SELECT start_date, end_date, total_price, prepayment, prepayment_paid, full_amount_paid FROM bookings
-             WHERE apartment_id = $1 AND status != 'CANCELLED' AND (prepayment_paid = true OR full_amount_paid = true) AND start_date < $3 AND end_date > $2`,
+            `SELECT start_date, end_date, total_price, prepayment, prepayment_paid, full_amount_paid,
+             (SELECT COALESCE(SUM(amount), 0) FROM booking_payments WHERE booking_id = b.id AND paid = true) AS paid_from_payments,
+             (SELECT COUNT(*) FROM booking_payments WHERE booking_id = b.id AND paid = true) AS payment_count
+             FROM bookings b
+             WHERE apartment_id = $1 AND status != 'CANCELLED' AND start_date < $3 AND end_date > $2
+             AND ((prepayment_paid = true OR full_amount_paid = true) OR EXISTS (SELECT 1 FROM booking_payments WHERE booking_id = b.id AND paid = true))`,
             [apt.id, periodStart, periodEnd]
         );
         let income = 0;
         for (const b of bookingsRes.rows) {
             const prep = parseFloat(b.prepayment) || 0;
             const totalPrice = parseFloat(b.total_price) || 0;
-            const paidAmount = (b.prepayment_paid ? prep : 0) + (b.full_amount_paid ? (totalPrice - prep) : 0);
+            const paidAmount = (b.payment_count > 0)
+                ? (parseFloat(b.paid_from_payments) || 0)
+                : ((b.prepayment_paid ? prep : 0) + (b.full_amount_paid ? (totalPrice - prep) : 0));
             if (paidAmount <= 0) continue;
             const start = toDateStr(b.start_date);
             const end = toDateStr(b.end_date);

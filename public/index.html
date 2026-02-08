@@ -415,12 +415,15 @@
                 <hr class="detail-hr">
 
                 <div class="payments-outer-section">
-                    <h4 class="outer-label">Платежі:</h4>
+                    <div class="payments-section-header">
+                        <h4 class="outer-label">Платежі:</h4>
+                        <button type="button" class="payment-edit-pencil" id="btnEditPaymentsFromCard" title="Редагувати суми та дати (доступно після підтвердження)" aria-label="Редагувати">✏️</button>
+                    </div>
 
                     <div class="payment-group">
                         <div class="group-header">
                             <span>Основні</span>
-                            <button class="add-text-btn">+ Додати</button>
+                            <button type="button" class="add-text-btn" id="addMainPaymentBtn">+ Додати</button>
                         </div>
                         <div id="mainPaymentsList" class="payment-cards-container">
                             <!-- Cards will be injected here -->
@@ -430,7 +433,7 @@
                     <div class="payment-group">
                         <div class="group-header">
                             <span>Додаткові</span>
-                            <button class="add-text-btn">+ Додати</button>
+                            <button type="button" class="add-text-btn" id="addExtraPaymentBtn">+ Додати</button>
                         </div>
                         <div id="extraPaymentsList" class="payment-cards-container"></div>
                     </div>
@@ -438,7 +441,7 @@
                     <div class="payment-group">
                         <div class="group-header">
                             <span>Прибирання</span>
-                            <button class="add-text-btn">+ Додати</button>
+                            <button type="button" class="add-text-btn" id="addCleaningPaymentBtn">+ Додати</button>
                         </div>
                         <div id="cleaningPaymentsList" class="payment-cards-container"></div>
                     </div>
@@ -656,6 +659,53 @@
                 </div>
                 <button type="submit" class="object-card-save-btn" id="expenseSubmitBtn">Додати</button>
                 <button type="button" class="object-card-delete-btn" id="expenseDeleteBtn" style="display: none;">Видалити</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Payment add/edit modal -->
+    <div id="paymentFormModal" class="modal" style="display: none;">
+        <div class="modal-content object-card-wrap" style="max-width: 420px;">
+            <div class="object-card-header">
+                <button type="button" class="header-icon-btn" id="paymentModalBack" aria-label="Закрити">‹</button>
+                <h3 class="object-card-title" id="paymentModalTitle">Платіж</h3>
+            </div>
+            <form id="paymentForm" class="object-card-form">
+                <input type="hidden" id="paymentFormBookingId" value="">
+                <input type="hidden" id="paymentFormPaymentId" value="">
+                <div class="form-group" id="paymentFormTypeGroup">
+                    <label>Тип</label>
+                    <select id="paymentFormType" class="object-price-input" style="width:100%;padding:0.7rem;">
+                        <option value="prepayment">Передплата</option>
+                        <option value="main">Основний (період)</option>
+                        <option value="extra">Додатковий</option>
+                        <option value="cleaning">Прибирання</option>
+                    </select>
+                </div>
+                <div class="form-group payment-form-period" style="display: none;">
+                    <label>Період оренди</label>
+                    <div class="form-row" style="gap: 0.5rem;">
+                        <input type="date" id="paymentFormPeriodStart" class="object-price-input" placeholder="З">
+                        <input type="date" id="paymentFormPeriodEnd" class="object-price-input" placeholder="По">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Сума (UAH) *</label>
+                    <input type="number" id="paymentFormAmount" required min="0" step="1" placeholder="0" class="object-price-input">
+                </div>
+                <div class="form-group">
+                    <label>Дата оплати *</label>
+                    <input type="date" id="paymentFormDate" required class="object-price-input">
+                </div>
+                <div class="form-group">
+                    <label>Спосіб оплати</label>
+                    <select id="paymentFormMethod" class="object-price-input" style="width:100%;padding:0.7rem;">
+                        <option value="">— Не вказано —</option>
+                        <option value="cash">Готівка</option>
+                        <option value="card">Картка</option>
+                    </select>
+                </div>
+                <button type="submit" class="object-card-save-btn" id="paymentFormSubmitBtn">Зберегти</button>
             </form>
         </div>
     </div>

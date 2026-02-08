@@ -245,7 +245,10 @@ app.get('/api/bookings', async (req, res) => {
     const { start, end } = req.query;
     try {
         const result = await db.query(
-            'SELECT b.*, c.name as client_name, c.phone as client_phone FROM bookings b LEFT JOIN clients c ON b.client_id = c.id WHERE start_date < $2 AND end_date >= $1',
+            `SELECT b.*, c.name as client_name, c.phone as client_phone,
+             (SELECT COALESCE(SUM(amount), 0) FROM booking_payments WHERE booking_id = b.id AND paid = true) AS paid_amount,
+             (SELECT COUNT(*) FROM booking_payments WHERE booking_id = b.id AND paid = true) AS paid_payment_count
+             FROM bookings b LEFT JOIN clients c ON b.client_id = c.id WHERE start_date < $2 AND end_date >= $1`,
             [start || '2000-01-01', end || '2100-01-01']
         );
         res.json(result.rows);
@@ -262,6 +265,10 @@ app.post('/api/bookings', async (req, res) => {
         check_in_time, check_out_time, prepayment, notes,
         adults, children, deposit, booking_source, status
     } = req.body;
+
+    if (!apartment_id) return res.status(400).json({ error: 'apartment_id обов\'язковий' });
+    if (!client_phone || !client_phone.trim()) return res.status(400).json({ error: 'Телефон клієнта обов\'язковий' });
+    if (!start_date || !end_date) return res.status(400).json({ error: 'Дати бронювання обов\'язкові' });
 
     try {
         // 0. Check for overbooking (overlap)
@@ -421,6 +428,101 @@ app.delete('/api/bookings/:id', async (req, res) => {
             return res.status(404).json({ error: 'Бронь не знайдена' });
         }
         res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- Booking payments API ---
+const PAYMENT_TYPES = ['prepayment', 'main', 'extra', 'cleaning'];
+const PAYMENT_METHODS = ['cash', 'card'];
+
+async function ensureBookingExists(bookingId) {
+    const r = await db.query('SELECT id FROM bookings WHERE id = $1', [bookingId]);
+    if (r.rows.length === 0) return null;
+    return r.rows[0].id;
+}
+
+app.get('/api/bookings/:id/payments', async (req, res) => {
+    const bookingId = parseInt(req.params.id, 10);
+    if (!bookingId || isNaN(bookingId)) return res.status(400).json({ error: 'Invalid booking id' });
+    try {
+        const exists = await ensureBookingExists(bookingId);
+        if (!exists) return res.status(404).json({ error: 'Бронь не знайдена' });
+        const result = await db.query(
+            'SELECT * FROM booking_payments WHERE booking_id = $1 ORDER BY type, payment_date, id',
+            [bookingId]
+        );
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/bookings/:id/payments', async (req, res) => {
+    const bookingId = parseInt(req.params.id, 10);
+    if (!bookingId || isNaN(bookingId)) return res.status(400).json({ error: 'Invalid booking id' });
+    const { type, amount, payment_date, paid, payment_method, period_start, period_end } = req.body;
+    if (!type || !PAYMENT_TYPES.includes(type)) return res.status(400).json({ error: 'Невірний тип платежу (prepayment, main, extra, cleaning)' });
+    const amt = amount != null ? parseFloat(amount) : 0;
+    const d = payment_date || new Date().toISOString().slice(0, 10);
+    try {
+        const exists = await ensureBookingExists(bookingId);
+        if (!exists) return res.status(404).json({ error: 'Бронь не знайдена' });
+        const method = payment_method && PAYMENT_METHODS.includes(payment_method) ? payment_method : null;
+        const result = await db.query(
+            `INSERT INTO booking_payments (booking_id, type, amount, payment_date, paid, payment_method, period_start, period_end)
+             VALUES ($1, $2, $3, $4::date, $5, $6, $7::date, $8::date) RETURNING *`,
+            [bookingId, type, amt, d, !!paid, method, period_start || null, period_end || null]
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.patch('/api/bookings/:bookingId/payments/:paymentId', async (req, res) => {
+    const bookingId = parseInt(req.params.bookingId, 10);
+    const paymentId = parseInt(req.params.paymentId, 10);
+    if (!bookingId || isNaN(bookingId) || !paymentId || isNaN(paymentId)) return res.status(400).json({ error: 'Invalid id' });
+    const { type, amount, payment_date, paid, payment_method, period_start, period_end } = req.body;
+    try {
+        const exists = await ensureBookingExists(bookingId);
+        if (!exists) return res.status(404).json({ error: 'Бронь не знайдена' });
+        const updates = [];
+        const values = [];
+        let i = 1;
+        if (type !== undefined) {
+            if (!PAYMENT_TYPES.includes(type)) return res.status(400).json({ error: 'Невірний тип платежу' });
+            updates.push(`type = $${i++}`); values.push(type);
+        }
+        if (amount !== undefined) { updates.push(`amount = $${i++}`); values.push(parseFloat(amount)); }
+        if (payment_date !== undefined) { updates.push(`payment_date = $${i++}`); values.push(payment_date); }
+        if (typeof paid === 'boolean') { updates.push(`paid = $${i++}`); values.push(paid); }
+        if (payment_method !== undefined) { updates.push(`payment_method = $${i++}`); values.push(payment_method && PAYMENT_METHODS.includes(payment_method) ? payment_method : null); }
+        if (period_start !== undefined) { updates.push(`period_start = $${i++}`); values.push(period_start || null); }
+        if (period_end !== undefined) { updates.push(`period_end = $${i++}`); values.push(period_end || null); }
+        if (updates.length === 0) return res.status(400).json({ error: 'Немає полів для оновлення' });
+        values.push(paymentId, bookingId);
+        const result = await db.query(
+            `UPDATE booking_payments SET ${updates.join(', ')} WHERE id = $${i} AND booking_id = $${i + 1} RETURNING *`,
+            values
+        );
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Платіж не знайдено' });
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/bookings/:bookingId/payments/:paymentId', async (req, res) => {
+    const bookingId = parseInt(req.params.bookingId, 10);
+    const paymentId = parseInt(req.params.paymentId, 10);
+    if (!bookingId || isNaN(bookingId) || !paymentId || isNaN(paymentId)) return res.status(400).json({ error: 'Invalid id' });
+    try {
+        const result = await db.query('DELETE FROM booking_payments WHERE id = $1 AND booking_id = $2 RETURNING id', [paymentId, bookingId]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Платіж не знайдено' });
+        res.json({ ok: true, id: paymentId });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

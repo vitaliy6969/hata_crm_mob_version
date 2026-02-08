@@ -749,6 +749,27 @@ main {
     margin-top: 1.5rem;
 }
 
+.payments-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+.payments-section-header .outer-label {
+    margin-bottom: 0;
+}
+.payment-edit-pencil {
+    background: none;
+    border: none;
+    padding: 0.35rem;
+    cursor: pointer;
+    font-size: 1.1rem;
+    opacity: 0.85;
+}
+.payment-edit-pencil:hover {
+    opacity: 1;
+}
+
 .outer-label {
     font-size: 1.1rem;
     margin-bottom: 1.2rem;
@@ -783,6 +804,86 @@ main {
     display: flex;
     flex-direction: column;
     gap: 0.8rem;
+}
+
+.payment-summary-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    font-size: 0.9rem;
+}
+.payment-summary-line.paid-sum {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.payment-empty-hint {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    padding: 0.5rem 0;
+}
+
+.payment-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+.payment-card-paid {
+    border-color: rgba(13, 148, 136, 0.4);
+    background: rgba(13, 148, 136, 0.12);
+}
+.payment-card-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+.payment-card-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-white);
+}
+.payment-card-date {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+.payment-card-amount {
+    font-weight: 600;
+    color: var(--primary);
+    font-size: 1rem;
+}
+.payment-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.payment-card-btn {
+    background: transparent;
+    border: 1px solid var(--glass-border);
+    color: var(--text-white);
+    padding: 0.4rem 0.6rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+.payment-card-edit {
+    padding: 0.35rem 0.5rem;
+    font-size: 1rem;
+}
+.payment-card-mark-paid {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+.payment-card-badge-paid {
+    font-size: 0.8rem;
+    color: var(--primary);
+    font-weight: 600;
 }
 
 /* Картка платежу — суцільний світло-синій фон, без прозорості (як на зразку) */

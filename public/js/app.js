@@ -8,6 +8,12 @@ function fmtNum(n) {
     return String(Math.round(x));
 }
 
+/** Escape HTML to prevent XSS */
+function escHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 class HataCRM {
     constructor() {
         this.currentMonth = new Date();
@@ -212,6 +218,7 @@ class HataCRM {
 
         this.setupSettingsListeners();
         this.setupObjectCardListeners();
+        this.setupPaymentFormModal();
         const addObjectBtn = document.getElementById('addObjectBtn');
         if (addObjectBtn) addObjectBtn.onclick = () => this.openObjectCard(null);
     }
@@ -508,87 +515,28 @@ class HataCRM {
                 if (detPhoneCopyBtn) detPhoneCopyBtn.style.display = 'none';
             }
 
-            // Payments
+            // Payments: load from API and render cards
             const mainPList = document.getElementById('mainPaymentsList');
             const addPList = document.getElementById('extraPaymentsList');
             const cleanPList = document.getElementById('cleaningPaymentsList');
 
-            if (mainPList) mainPList.innerHTML = '';
-            if (addPList) addPList.innerHTML = '';
-            if (cleanPList) cleanPList.innerHTML = '';
-
-            const addPaymentItem = (container, label, amount, type = 'income') => {
-                if (!container || amount == null) return;
-                container.innerHTML += `
-                    <div class="payment-item">
-                        <span>${label}</span>
-                        <span class="${type === 'income' ? 'p-amount' : 'p-expense'}">
-                            ${type === 'income' ? '+' : '-'}${fmtNum(amount)} UAH
-                        </span>
-                    </div>`;
-            };
-
-            // Calculate totals
-            const total = parseFloat(booking.total_price) || 0;
-            const prepaid = parseFloat(booking.prepayment) || 0;
-            const residue = total - prepaid;
-
-            if (mainPList) {
-                addPaymentItem(mainPList, 'Загальна вартість', total, 'income');
-                addPaymentItem(mainPList, 'Передплата', prepaid, 'income');
-
-                if (residue > 0) {
-                    mainPList.innerHTML += `
-                    <div class="payment-item residue">
-                        <span>Залишок до сплати</span>
-                        <span class="p-amount" style="color:#fbbf24;">${fmtNum(residue)} UAH</span>
-                    </div>`;
-                }
+            let payments = [];
+            try {
+                const payRes = await fetch(`${API_BASE}/api/bookings/${booking.id}/payments`);
+                if (payRes.ok) payments = await payRes.json();
+            } catch (e) {
+                console.warn('Failed to load payments:', e);
             }
+            this._currentPayments = payments;
+            this._currentDetailBooking = booking; // set early for payment modal
+            this.renderPaymentsSection(booking, payments, mainPList, addPList, cleanPList);
 
-            if (booking.deposit > 0 && addPList) {
-                addPaymentItem(addPList, 'Застава', booking.deposit, 'income');
-            } else if (addPList) {
-                addPList.innerHTML = '<div style="font-size: 0.8rem; color: var(--text-muted); padding: 0.5rem;">Немає додаткових платежів</div>';
-            }
+            // Hide old payment confirmation block (we use per-payment cards now)
+            const paymentConfirmSection = document.querySelector('.payment-confirm-section');
+            if (paymentConfirmSection) paymentConfirmSection.style.display = 'none';
 
             // Created Date
             setSafeText('detCreatedDate', booking.created_at ? new Date(booking.created_at).toLocaleDateString('uk-UA') : new Date().toLocaleDateString('uk-UA'));
-
-            // Payment confirmation: status badges and buttons
-            const prepayPaid = !!booking.prepayment_paid;
-            const fullPaid = !!booking.full_amount_paid;
-            const prepayStatusEl = document.getElementById('detPrepaymentStatus');
-            const fullStatusEl = document.getElementById('detFullAmountStatus');
-            const btnPrepay = document.getElementById('btnConfirmPrepayment');
-            const btnFull = document.getElementById('btnConfirmFullAmount');
-            if (prepayStatusEl) {
-                if (prepaid <= 0) {
-                    prepayStatusEl.textContent = '—';
-                    prepayStatusEl.className = 'payment-status-badge';
-                    if (btnPrepay) btnPrepay.style.display = 'none';
-                } else if (prepayPaid) {
-                    prepayStatusEl.textContent = 'Оплачено';
-                    prepayStatusEl.className = 'payment-status-badge paid';
-                    if (btnPrepay) btnPrepay.style.display = 'none';
-                } else {
-                    prepayStatusEl.textContent = 'Не оплачено';
-                    prepayStatusEl.className = 'payment-status-badge unpaid';
-                    if (btnPrepay) btnPrepay.style.display = 'inline-block';
-                }
-            }
-            if (fullStatusEl) {
-                if (fullPaid) {
-                    fullStatusEl.textContent = 'Оплачено';
-                    fullStatusEl.className = 'payment-status-badge paid';
-                    if (btnFull) btnFull.style.display = 'none';
-                } else {
-                    fullStatusEl.textContent = 'Не оплачено';
-                    fullStatusEl.className = 'payment-status-badge unpaid';
-                    if (btnFull) btnFull.style.display = 'inline-block';
-                }
-            }
-            this.setupPaymentConfirmButtons(booking.id, prepaid > 0 && !prepayPaid, !fullPaid);
 
             // Load templates and setup selector
             try {
@@ -623,8 +571,24 @@ class HataCRM {
             document.getElementById('detailsEditBlock').style.display = 'none';
             const editBtn = document.getElementById('btnDetailsEdit');
             if (editBtn) editBtn.onclick = () => this.switchToDetailsEdit();
+            const btnEditPayments = document.getElementById('btnEditPaymentsFromCard');
+            if (btnEditPayments) {
+                btnEditPayments.onclick = () => {
+                    const hasPaid = (this._currentPayments || []).some(p => p.paid) || !!(booking.prepayment_paid || booking.full_amount_paid);
+                    if (hasPaid && !confirm('Ви впевнені, що хочете редагувати бронь з уже оплаченими платежами? Зміни потрібно буде зберегти.')) return;
+                    this.switchToDetailsEdit();
+                };
+            }
             const delBtn = document.getElementById('btnDetailsDelete');
             if (delBtn) delBtn.onclick = () => this.deleteCurrentBooking();
+
+            // "+ Додати" for payments (booking already set as _currentDetailBooking)
+            const addMain = document.getElementById('addMainPaymentBtn');
+            const addExtra = document.getElementById('addExtraPaymentBtn');
+            const addClean = document.getElementById('addCleaningPaymentBtn');
+            if (addMain) addMain.onclick = () => this.openPaymentModal(booking.id, 'main', null);
+            if (addExtra) addExtra.onclick = () => this.openPaymentModal(booking.id, 'extra', null);
+            if (addClean) addClean.onclick = () => this.openPaymentModal(booking.id, 'cleaning', null);
 
         } catch (err) {
             console.error('Error opening details:', err);
@@ -737,6 +701,239 @@ class HataCRM {
             this.renderCalendar();
         } catch (err) {
             alert(err.message || 'Помилка збереження');
+        }
+    }
+
+    /** Format date for display dd.mm.yyyy */
+    fmtDate(dateStr) {
+        if (!dateStr) return '—';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return String(dateStr).slice(0, 10);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}.${month}.${year}`;
+    }
+
+    renderPaymentsSection(booking, payments, mainPList, addPList, cleanPList) {
+        const totalPrice = parseFloat(booking.total_price) || 0;
+        const paidSum = (payments || []).filter(p => p.paid).reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+
+        const renderGroup = (container, list, types) => {
+            if (!container) return;
+            container.innerHTML = '';
+            if (totalPrice > 0 && container === mainPList) {
+                const sumEl = document.createElement('div');
+                sumEl.className = 'payment-summary-line';
+                sumEl.innerHTML = `<span>Загальна вартість</span><span class="p-amount">${fmtNum(totalPrice)} UAH</span>`;
+                container.appendChild(sumEl);
+                if (paidSum > 0) {
+                    const paidEl = document.createElement('div');
+                    paidEl.className = 'payment-summary-line paid-sum';
+                    paidEl.innerHTML = `<span>Оплачено</span><span class="p-amount">${fmtNum(paidSum)} UAH</span>`;
+                    container.appendChild(paidEl);
+                }
+            }
+            const filtered = (list || []).filter(p => types.includes(p.type));
+            if (filtered.length === 0 && container !== mainPList) {
+                const empty = document.createElement('div');
+                empty.className = 'payment-empty-hint';
+                empty.textContent = container === addPList ? 'Немає додаткових платежів' : container === cleanPList ? 'Немає платежів за прибирання' : '';
+                if (empty.textContent) container.appendChild(empty);
+                return;
+            }
+            filtered.forEach(p => container.appendChild(this.buildPaymentCard(p, booking.id)));
+        };
+
+        const main = (payments || []).filter(p => p.type === 'prepayment' || p.type === 'main');
+        const extra = (payments || []).filter(p => p.type === 'extra');
+        const cleaning = (payments || []).filter(p => p.type === 'cleaning');
+        renderGroup(mainPList, main, ['prepayment', 'main']);
+        renderGroup(addPList, extra, ['extra']);
+        renderGroup(cleanPList, cleaning, ['cleaning']);
+    }
+
+    buildPaymentCard(payment, bookingId) {
+        const wrap = document.createElement('div');
+        wrap.className = 'payment-card' + (payment.paid ? ' payment-card-paid' : '');
+        const title = payment.type === 'prepayment' ? 'Передплата'
+            : payment.type === 'main' && payment.period_start && payment.period_end
+                ? `Період ${this.fmtDate(payment.period_start)} – ${this.fmtDate(payment.period_end)}`
+                : payment.type === 'main' ? 'Основний платіж'
+                    : payment.type === 'extra' ? 'Додатковий' : 'Прибирання';
+        const dateStr = this.fmtDate(payment.payment_date);
+        const amountStr = fmtNum(payment.amount) + ' UAH';
+        const methodLabel = payment.payment_method === 'cash' ? ' (готівка)' : payment.payment_method === 'card' ? ' (картка)' : '';
+        wrap.innerHTML = `
+            <div class="payment-card-main">
+                <span class="payment-card-title">${escHtml(title)}</span>
+                <span class="payment-card-date">${dateStr}${methodLabel}</span>
+                <span class="payment-card-amount">${amountStr}</span>
+            </div>
+            <div class="payment-card-actions">
+                <button type="button" class="payment-card-btn payment-card-edit" data-payment-id="${payment.id}" title="Редагувати">✏️</button>
+                <button type="button" class="payment-card-btn payment-card-delete" data-payment-id="${payment.id}" title="Видалити">🗑</button>
+                ${!payment.paid ? `<button type="button" class="payment-card-btn payment-card-mark-paid" data-payment-id="${payment.id}">Відмітити оплаченим</button>` : '<span class="payment-card-badge-paid">Оплачено</span>'}
+            </div>`;
+        const editBtn = wrap.querySelector('.payment-card-edit');
+        const deleteBtn = wrap.querySelector('.payment-card-delete');
+        const markBtn = wrap.querySelector('.payment-card-mark-paid');
+        if (deleteBtn) {
+            deleteBtn.onclick = async () => {
+                if (!confirm('Видалити цей платіж?')) return;
+                try {
+                    const res = await fetch(`${API_BASE}/api/bookings/${bookingId}/payments/${payment.id}`, { method: 'DELETE' });
+                    if (!res.ok) throw new Error((await res.json()).error || 'Помилка');
+                    const payRes = await fetch(`${API_BASE}/api/bookings/${bookingId}/payments`);
+                    const list = payRes.ok ? await payRes.json() : [];
+                    this._currentPayments = list;
+                    this.renderPaymentsSection(this._currentDetailBooking, list,
+                        document.getElementById('mainPaymentsList'),
+                        document.getElementById('extraPaymentsList'),
+                        document.getElementById('cleaningPaymentsList'));
+                    this.renderCalendar();
+                } catch (e) {
+                    alert(e.message || 'Помилка видалення');
+                }
+            };
+        }
+        if (editBtn) {
+            editBtn.onclick = () => {
+                if (payment.paid && !confirm('Редагувати вже оплачений платіж?')) return;
+                this.openPaymentModal(bookingId, null, payment);
+            };
+        }
+        if (markBtn) {
+            markBtn.onclick = async () => {
+                try {
+                    const res = await fetch(`${API_BASE}/api/bookings/${bookingId}/payments/${payment.id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paid: true })
+                    });
+                    if (!res.ok) throw new Error((await res.json()).error || 'Помилка');
+                    const payRes = await fetch(`${API_BASE}/api/bookings/${bookingId}/payments`);
+                    const list = payRes.ok ? await payRes.json() : [];
+                    this._currentPayments = list;
+                    this.renderPaymentsSection(this._currentDetailBooking, list,
+                        document.getElementById('mainPaymentsList'),
+                        document.getElementById('extraPaymentsList'),
+                        document.getElementById('cleaningPaymentsList'));
+                    this.renderCalendar();
+                } catch (e) {
+                    alert(e.message || 'Помилка оновлення');
+                }
+            };
+        }
+        return wrap;
+    }
+
+    openPaymentModal(bookingId, group, payment) {
+        const modal = document.getElementById('paymentFormModal');
+        const titleEl = document.getElementById('paymentModalTitle');
+        document.getElementById('paymentFormBookingId').value = bookingId;
+        document.getElementById('paymentFormPaymentId').value = payment ? payment.id : '';
+        const typeSel = document.getElementById('paymentFormType');
+        const typeGroupEl = document.getElementById('paymentFormTypeGroup');
+        const periodWrap = document.querySelector('.payment-form-period');
+        const periodStart = document.getElementById('paymentFormPeriodStart');
+        const periodEnd = document.getElementById('paymentFormPeriodEnd');
+        const today = new Date().toISOString().slice(0, 10);
+
+        const methodSel = document.getElementById('paymentFormMethod');
+
+        if (payment) {
+            titleEl.textContent = 'Редагувати платіж';
+            typeSel.value = payment.type;
+            typeSel.disabled = true;
+            typeGroupEl.style.display = 'block';
+            document.getElementById('paymentFormAmount').value = payment.amount != null ? payment.amount : '';
+            document.getElementById('paymentFormDate').value = (payment.payment_date || '').toString().slice(0, 10);
+            periodStart.value = (payment.period_start || '').toString().slice(0, 10);
+            periodEnd.value = (payment.period_end || '').toString().slice(0, 10);
+            periodWrap.style.display = payment.type === 'main' ? 'block' : 'none';
+            if (methodSel) methodSel.value = payment.payment_method || '';
+        } else {
+            titleEl.textContent = 'Новий платіж';
+            typeSel.disabled = false;
+            typeGroupEl.style.display = 'block';
+            if (group === 'main') {
+                typeSel.innerHTML = '<option value="prepayment">Передплата</option><option value="main">Основний (період)</option>';
+            } else if (group === 'extra') {
+                typeSel.innerHTML = '<option value="extra">Додатковий</option>';
+            } else if (group === 'cleaning') {
+                typeSel.innerHTML = '<option value="cleaning">Прибирання</option>';
+            } else {
+                typeSel.innerHTML = '<option value="prepayment">Передплата</option><option value="main">Основний (період)</option><option value="extra">Додатковий</option><option value="cleaning">Прибирання</option>';
+            }
+            typeSel.value = group === 'main' ? 'prepayment' : (group || 'prepayment');
+            document.getElementById('paymentFormAmount').value = '';
+            document.getElementById('paymentFormDate').value = today;
+            if (methodSel) methodSel.value = '';
+            periodStart.value = '';
+            periodEnd.value = '';
+            const b = this._currentDetailBooking;
+            if (b && typeSel.value === 'main') {
+                periodStart.value = (b.start_date || '').toString().slice(0, 10);
+                periodEnd.value = (b.end_date || '').toString().slice(0, 10);
+            }
+            periodWrap.style.display = typeSel.value === 'main' ? 'block' : 'none';
+        }
+
+        typeSel.onchange = () => {
+            periodWrap.style.display = typeSel.value === 'main' ? 'block' : 'none';
+        };
+
+        modal.style.display = 'flex';
+        this.toggleScroll(true);
+    }
+
+    setupPaymentFormModal() {
+        const modal = document.getElementById('paymentFormModal');
+        const backBtn = document.getElementById('paymentModalBack');
+        const form = document.getElementById('paymentForm');
+        if (backBtn) backBtn.onclick = () => { modal.style.display = 'none'; this.toggleScroll(false); };
+        if (form) {
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                const bookingId = document.getElementById('paymentFormBookingId').value;
+                const paymentId = document.getElementById('paymentFormPaymentId').value;
+                const type = document.getElementById('paymentFormType').value;
+                const amount = parseFloat(document.getElementById('paymentFormAmount').value) || 0;
+                const payment_date = document.getElementById('paymentFormDate').value;
+                const payment_method = document.getElementById('paymentFormMethod')?.value || null;
+                const period_start = document.getElementById('paymentFormPeriodStart').value || null;
+                const period_end = document.getElementById('paymentFormPeriodEnd').value || null;
+                try {
+                    if (paymentId) {
+                        const res = await fetch(`${API_BASE}/api/bookings/${bookingId}/payments/${paymentId}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ type, amount, payment_date, payment_method, period_start, period_end })
+                        });
+                        if (!res.ok) throw new Error((await res.json()).error || 'Помилка');
+                    } else {
+                        const res = await fetch(`${API_BASE}/api/bookings/${bookingId}/payments`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ type, amount, payment_date, payment_method, period_start, period_end })
+                        });
+                        if (!res.ok) throw new Error((await res.json()).error || 'Помилка');
+                    }
+                    modal.style.display = 'none';
+                    this.toggleScroll(false);
+                    const payRes = await fetch(`${API_BASE}/api/bookings/${bookingId}/payments`);
+                    const list = payRes.ok ? await payRes.json() : [];
+                    this._currentPayments = list;
+                    const b = this._currentDetailBooking;
+                    if (b) {
+                        this.renderPaymentsSection(b, list, document.getElementById('mainPaymentsList'), document.getElementById('extraPaymentsList'), document.getElementById('cleaningPaymentsList'));
+                    }
+                    this.renderCalendar();
+                } catch (err) {
+                    alert(err.message || 'Помилка збереження');
+                }
+            };
         }
     }
 
@@ -997,10 +1194,19 @@ class HataCRM {
                     const start = booking.start_date.split('T')[0];
                     const pillSet = document.createElement('div');
                     pillSet.className = 'pill';
-                    const prepaidAmt = parseFloat(booking.prepayment) || 0;
-                    const needsPrepay = prepaidAmt > 0 && !booking.prepayment_paid;
-                    const needsFull = !booking.full_amount_paid;
-                    if (needsPrepay || needsFull) pillSet.classList.add('pill-unpaid');
+                    const totalPrice = parseFloat(booking.total_price) || 0;
+                    const paidPaymentCount = parseInt(booking.paid_payment_count) || 0;
+                    const paidAmount = parseFloat(booking.paid_amount) || 0;
+                    let isUnpaid;
+                    if (paidPaymentCount > 0) {
+                        isUnpaid = totalPrice > 0 && paidAmount < totalPrice;
+                    } else {
+                        const prepaidAmt = parseFloat(booking.prepayment) || 0;
+                        const needsPrepay = prepaidAmt > 0 && !booking.prepayment_paid;
+                        const needsFull = !booking.full_amount_paid;
+                        isUnpaid = needsPrepay || needsFull;
+                    }
+                    if (isUnpaid) pillSet.classList.add('pill-unpaid');
 
                     const colors = ['pill-pink', 'pill-yellow', 'pill-blue', 'pill-green', 'pill-orange', 'pill-cyan'];
                     pillSet.classList.add(colors[booking.id % colors.length]);
@@ -1014,8 +1220,8 @@ class HataCRM {
                     if (dayStr === start) {
                         const name = booking.client_name || '';
                         const displayName = name.length > 12 ? name.substring(0, 10) + '..' : name || 'Гість';
-                        const dotClass = (needsPrepay || needsFull) ? 'status-dot dot-unpaid' : 'status-dot';
-                        pillSet.innerHTML = `<span class="${dotClass}"></span><span style="overflow:hidden; text-overflow:ellipsis;">${displayName}</span>`;
+                        const dotClass = isUnpaid ? 'status-dot dot-unpaid' : 'status-dot';
+                        pillSet.innerHTML = `<span class="${dotClass}"></span><span style="overflow:hidden; text-overflow:ellipsis;">${escHtml(displayName)}</span>`;
                     }
                     /* У середині та в кінці смуги крапку не показуємо — лише один раз на початку */
 
@@ -1059,7 +1265,7 @@ class HataCRM {
         if (!list) return;
         list.innerHTML = this.apartments.map(apt => `
             <div class="apt-card" data-apt-id="${apt.id}">
-                <h3>${apt.name}</h3>
+                <h3>${escHtml(apt.name)}</h3>
                 <p>База: ${fmtNum(apt.base_price)} UAH</p>
                 <div class="card-actions">
                     <button type="button" class="edit-btn">Редагувати</button>
@@ -1270,11 +1476,11 @@ class HataCRM {
                 dateStr = !isNaN(d.getTime()) ? d.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
             }
             return `<li class="expense-item" data-expense-id="${ex.id}" role="button" tabindex="0">
-                <span class="expense-item-cat">${ex.category}</span>
-                <span class="expense-item-apt">${apt}</span>
+                <span class="expense-item-cat">${escHtml(ex.category)}</span>
+                <span class="expense-item-apt">${escHtml(apt)}</span>
                 <span class="expense-item-date">${dateStr}</span>
                 <span class="expense-item-amount">−${fmtNum(ex.amount)} UAH</span>
-                ${ex.description ? `<span class="expense-item-desc">${ex.description}</span>` : ''}
+                ${ex.description ? `<span class="expense-item-desc">${escHtml(ex.description)}</span>` : ''}
             </li>`;
         }).join('');
         list.querySelectorAll('.expense-item').forEach(li => {
@@ -1488,9 +1694,9 @@ class HataCRM {
 
         list.innerHTML = filtered.map(client => `
             <div class="client-card">
-                <div class="client-name">${client.name}</div>
-                <div class="client-phone">${client.phone}</div>
-                ${client.secondary_contact ? `<div class="client-phone" style="font-size: 0.75rem;">${client.secondary_contact}</div>` : ''}
+                <div class="client-name">${escHtml(client.name)}</div>
+                <div class="client-phone">${escHtml(client.phone)}</div>
+                ${client.secondary_contact ? `<div class="client-phone" style="font-size: 0.75rem;">${escHtml(client.secondary_contact)}</div>` : ''}
             </div>
         `).join('');
     }
@@ -1529,9 +1735,9 @@ class HataCRM {
 
         list.innerHTML = this.templates.map(t => `
             <div class="template-card">
-                <button class="template-delete" onclick="app.deleteTemplate(${t.id})">Видалити</button>
-                <div class="template-title">${t.title}</div>
-                <div class="template-content">${t.content}</div>
+                <button class="template-delete" onclick="app.deleteTemplate(${parseInt(t.id, 10)})">Видалити</button>
+                <div class="template-title">${escHtml(t.title)}</div>
+                <div class="template-content">${escHtml(t.content)}</div>
             </div>
         `).join('');
     }
