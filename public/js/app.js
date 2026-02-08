@@ -571,14 +571,6 @@ class HataCRM {
             document.getElementById('detailsEditBlock').style.display = 'none';
             const editBtn = document.getElementById('btnDetailsEdit');
             if (editBtn) editBtn.onclick = () => this.switchToDetailsEdit();
-            const btnEditPayments = document.getElementById('btnEditPaymentsFromCard');
-            if (btnEditPayments) {
-                btnEditPayments.onclick = () => {
-                    const hasPaid = (this._currentPayments || []).some(p => p.paid) || !!(booking.prepayment_paid || booking.full_amount_paid);
-                    if (hasPaid && !confirm('Ви впевнені, що хочете редагувати бронь з уже оплаченими платежами? Зміни потрібно буде зберегти.')) return;
-                    this.switchToDetailsEdit();
-                };
-            }
             const delBtn = document.getElementById('btnDetailsDelete');
             if (delBtn) delBtn.onclick = () => this.deleteCurrentBooking();
 
