@@ -1,8 +1,53 @@
 /**
  * Обрахунок аналітики в окремому модулі.
  * Результати пишуться в analytics_cache; API лише читає готові дані.
+ *
+ * Розподіл доходу по місяцях: ніч відноситься до дня заїзду (як у RentalBusiness).
+ * Приклад: заїзд 27.02, виїзд 02.03 → 3 ночі: 27→28 і 28→1 у лютому, 1→2 у березні → 2 ночі лютий, 1 ніч березень.
  */
 const db = require('./db');
+
+const MS_DAY = 24 * 60 * 60 * 1000;
+
+/** З значення з БД (Date або рядок) отримати YYYY-MM-DD */
+function toDateStr(val) {
+    if (!val) return '';
+    if (val instanceof Date && !isNaN(val.getTime())) {
+        const y = val.getFullYear();
+        const m = String(val.getMonth() + 1).padStart(2, '0');
+        const d = String(val.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+    const s = (val).toString().trim();
+    const match = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return match ? match[0] : s.split('T')[0].substring(0, 10) || '';
+}
+
+function parseDate(str) {
+    const s = toDateStr(str);
+    return s.length === 10 ? new Date(s) : null;
+}
+
+/** Загальна кількість ночей (виїзд — день виключно, остання ніч має заїзд end_date - 1) */
+function totalNights(startStr, endStr) {
+    const start = parseDate(startStr);
+    const end = parseDate(endStr);
+    if (!start || !end || end <= start) return 0;
+    return Math.floor((end - start) / MS_DAY);
+}
+
+/** Ночей у періоді [periodStart, periodEnd): рахуємо ночі, у яких дата заїзду потрапляє в період */
+function nightsInPeriod(startStr, endStr, periodStartStr, periodEndStr) {
+    const start = parseDate(startStr);
+    const end = parseDate(endStr);
+    const pStart = parseDate(periodStartStr);
+    const pEnd = parseDate(periodEndStr);
+    if (!start || !end || !pStart || !pEnd || end <= start) return 0;
+    const overlapStart = new Date(Math.max(start.getTime(), pStart.getTime()));
+    const overlapEnd = new Date(Math.min(end.getTime(), pEnd.getTime()));
+    if (overlapEnd <= overlapStart) return 0;
+    return Math.floor((overlapEnd - overlapStart) / MS_DAY);
+}
 
 function getPeriodBounds(year, month) {
     const y = parseInt(year, 10);
@@ -23,22 +68,37 @@ async function upsertCache(cacheKey, data) {
     );
 }
 
-/** Розрахунок monthly: 12 місяців для року */
+/** Розрахунок monthly: 12 місяців для року. Дохід розподіляється по ночах (ніч = день заїзду). */
 async function computeMonthly(year) {
+    const yearStart = `${year}-01-01`;
+    const yearEnd = `${year + 1}-01-01`;
+    const bookingsRes = await db.query(
+        `SELECT start_date, end_date, total_price, prepayment, prepayment_paid, full_amount_paid FROM bookings
+         WHERE status != 'CANCELLED' AND (prepayment_paid = true OR full_amount_paid = true) AND start_date < $2 AND end_date > $1`,
+        [yearStart, yearEnd]
+    );
     const months = [];
     for (let m = 1; m <= 12; m++) {
         const monthStart = `${year}-${String(m).padStart(2, '0')}-01`;
-        const monthEnd = m === 12 ? `${year + 1}-01-01` : `${year}-${String(m + 1).padStart(2, '0')}-01`;
-        const incomeResult = await db.query(
-            `SELECT COALESCE(SUM(total_price), 0) AS total FROM bookings
-             WHERE status != 'CANCELLED' AND start_date < $2 AND end_date >= $1`,
-            [monthStart, monthEnd]
-        );
+        const monthEnd = m === 12 ? yearEnd : `${year}-${String(m + 1).padStart(2, '0')}-01`;
+        let income = 0;
+        for (const b of bookingsRes.rows) {
+            const prep = parseFloat(b.prepayment) || 0;
+            const totalPrice = parseFloat(b.total_price) || 0;
+            const paidAmount = (b.prepayment_paid ? prep : 0) + (b.full_amount_paid ? (totalPrice - prep) : 0);
+            if (paidAmount <= 0) continue;
+            const start = toDateStr(b.start_date);
+            const end = toDateStr(b.end_date);
+            const total = totalNights(start, end);
+            if (total <= 0) continue;
+            const pricePerNight = paidAmount / total;
+            const nights = nightsInPeriod(start, end, monthStart, monthEnd);
+            income += pricePerNight * nights;
+        }
         const expenseResult = await db.query(
             'SELECT COALESCE(SUM(amount), 0) AS total FROM expenses WHERE date >= $1 AND date < $2',
             [monthStart, monthEnd]
         );
-        const income = parseFloat(incomeResult.rows[0].total) || 0;
         const expenses = parseFloat(expenseResult.rows[0].total) || 0;
         months.push({ month: m, year, income, expenses, balance: income - expenses });
     }
@@ -55,16 +115,29 @@ async function computeByApartment(year, month) {
     let totalIncome = 0;
     let totalExpenses = 0;
     for (const apt of apartments.rows) {
-        const incomeRes = await db.query(
-            `SELECT COALESCE(SUM(total_price), 0) AS total FROM bookings
-             WHERE apartment_id = $1 AND status != 'CANCELLED' AND start_date < $3 AND end_date >= $2`,
+        const bookingsRes = await db.query(
+            `SELECT start_date, end_date, total_price, prepayment, prepayment_paid, full_amount_paid FROM bookings
+             WHERE apartment_id = $1 AND status != 'CANCELLED' AND (prepayment_paid = true OR full_amount_paid = true) AND start_date < $3 AND end_date > $2`,
             [apt.id, periodStart, periodEnd]
         );
+        let income = 0;
+        for (const b of bookingsRes.rows) {
+            const prep = parseFloat(b.prepayment) || 0;
+            const totalPrice = parseFloat(b.total_price) || 0;
+            const paidAmount = (b.prepayment_paid ? prep : 0) + (b.full_amount_paid ? (totalPrice - prep) : 0);
+            if (paidAmount <= 0) continue;
+            const start = toDateStr(b.start_date);
+            const end = toDateStr(b.end_date);
+            const total = totalNights(start, end);
+            if (total <= 0) continue;
+            const pricePerNight = paidAmount / total;
+            const nights = nightsInPeriod(start, end, periodStart, periodEnd);
+            income += pricePerNight * nights;
+        }
         const expRes = await db.query(
             'SELECT COALESCE(SUM(amount), 0) AS total FROM expenses WHERE apartment_id = $1 AND date >= $2 AND date < $3',
             [apt.id, periodStart, periodEnd]
         );
-        const income = parseFloat(incomeRes.rows[0].total) || 0;
         const expenses = parseFloat(expRes.rows[0].total) || 0;
         totalIncome += income;
         totalExpenses += expenses;

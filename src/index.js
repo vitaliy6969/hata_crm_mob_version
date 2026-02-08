@@ -245,7 +245,7 @@ app.get('/api/bookings', async (req, res) => {
     const { start, end } = req.query;
     try {
         const result = await db.query(
-            'SELECT b.*, c.name as client_name, c.phone as client_phone FROM bookings b LEFT JOIN clients c ON b.client_id = c.id WHERE start_date < $2 AND end_date > $1',
+            'SELECT b.*, c.name as client_name, c.phone as client_phone FROM bookings b LEFT JOIN clients c ON b.client_id = c.id WHERE start_date < $2 AND end_date >= $1',
             [start || '2000-01-01', end || '2100-01-01']
         );
         res.json(result.rows);

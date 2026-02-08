@@ -984,7 +984,7 @@ class HataCRM {
                 const booking = this.bookings.find(b => {
                     const start = b.start_date.split('T')[0];
                     const end = b.end_date.split('T')[0];
-                    return b.apartment_id === apt.id && dayStr >= start && dayStr < end;
+                    return b.apartment_id === apt.id && dayStr >= start && dayStr <= end;
                 });
 
                 const cell = document.createElement('div');
@@ -1005,12 +1005,10 @@ class HataCRM {
                     const colors = ['pill-pink', 'pill-yellow', 'pill-blue', 'pill-green', 'pill-orange', 'pill-cyan'];
                     pillSet.classList.add(colors[booking.id % colors.length]);
 
-                    const lastDay = new Date(booking.end_date);
-                    lastDay.setDate(lastDay.getDate() - 1);
-                    const lastDayStr = lastDay.toISOString().split('T')[0];
+                    const endStr = booking.end_date.split('T')[0];
 
                     if (dayStr === start) pillSet.classList.add('start');
-                    else if (dayStr === lastDayStr) pillSet.classList.add('end');
+                    else if (dayStr === endStr) pillSet.classList.add('end');
                     else pillSet.classList.add('middle');
 
                     if (dayStr === start) {
